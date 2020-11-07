@@ -1,0 +1,42 @@
+Age of Empires as ageofempires
+Apex Legends as apexlegends
+Arena FPS as arenafps
+Arena of Valor as arenaofvalor
+Artifact as artifact
+Auto Chess as autochess
+Battalion 1944 as battalion
+Battlerite as battlerite
+Brawl Stars as brawlstars
+Call of Duty as callofduty
+Clash Royale as clashroyale
+Counter-Strike as counterstrike
+Critical Ops as criticalops
+CrossFire as crossfire
+Dota 2 as dota2
+FIFA as fifa
+Fighting Games as fighters
+Fortnite as fortnite
+Free Fire as freefire
+Hearthstone as hearthstone
+Heroes of the Storm as heroes
+League of Legends as leagueoflegends
+Magic: The Gathering as magic
+Overwatch as overwatch
+Paladins as paladins
+Pokemon as pokemon
+PLAYERUNKNOWN'S BATTLEGROUNDS as pubg
+Rainbow Six as rainbowsix
+Rocket League as rocketleague
+Legends of Runeterra as runeterra
+Sim Racing as simracing
+Smash as smash
+StarCraft Brood War as starcraft
+StarCraft 2 as starcraft2
+Teamfight Tactics as teamfighttactics
+Team Fortress as teamfortress
+TrackMania as trackmania
+Dota Underlords as underlords
+VALORANT as valorant
+Warcraft as warcraft
+Wild Rift as wildrift
+World of Warcraft as worldofwarcraft
