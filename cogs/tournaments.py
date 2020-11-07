@@ -72,14 +72,13 @@ class Tournaments(commands.Cog):
         #Basic logic from my understanding:
         #Bot will add reactions for left and right arrows, if the user reacts w/ the error, edit the message and remove their reaction.
         pl = {'wiki': wiki, 'apikey': API_KEY, 'limit': 100, 'conditions': f'[[startdate::<{d}]]','order':'startdate DESC'}
-        await ctx.send(f'The following upcoming tournaments for {wiki}: ')
+        initial = await ctx.send(f'The following upcoming tournaments for {wiki}: ')
         async with aiohttp.ClientSession() as cs:
             async with cs.post(self.url, data=pl) as r:
                 response = await r.json()
                 maxpagenumber = 10
                 current = 1
                 allContent = []
-                pageids = set()
                 count = 1
                 message = ''
                 for result in response['result']:
@@ -112,6 +111,7 @@ class Tournaments(commands.Cog):
                             await m.remove_reaction(reaction,user)
                     except asyncio.TimeoutError:
                         await m.delete()
+                        await initial.delete()
                         break
 
 

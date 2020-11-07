@@ -49,4 +49,5 @@ async def gamesList(ctx):
             break
 
 bot.load_extension('cogs.tournaments')
+bot.load_extension('cogs.teams')
 bot.run(DISCORD_KEY)
