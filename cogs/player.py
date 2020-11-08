@@ -23,7 +23,6 @@ class Player(commands.Cog):
                 for result in response['result']:
                     payloadImage = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1,
                                     'conditions': f'[[name::{result["team"]}]]'}
-                    print(result)
                     e = discord.Embed(title=result['id'])
                     e.add_field(name='Full Name', value=result['name'], inline=False)
                     if result['romanizedname'] != '':

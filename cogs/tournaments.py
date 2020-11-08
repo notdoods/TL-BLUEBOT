@@ -4,11 +4,12 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import aiohttp
 import asyncio
-from discord.ext import commands, tasks
+from discord.ext import commands
 import discord
 from decouple import config
 from datetime import date
 import math
+import json
 
 API_KEY = config('API_KEY')
 url = 'https://api.liquipedia.net/api'
@@ -20,6 +21,9 @@ HAS 3 BASICS FUNCTIONS
 [?searchtourney] This takes the pageid of a tournament and displays relevant information from the API
 [?upcoming] This displays the next 10 tournaments coming up from specified game
 [?recenttourneys] This displays pages of recent tournaments, which the user can control which page they are on via reactions.
+[?searchseries]
+[?searchmatches]
+[?matches]
 '''
 class Tournaments(commands.Cog):
     def __init__(self, bot):
@@ -28,9 +32,10 @@ class Tournaments(commands.Cog):
 
     @commands.command(name='searchtourney')
     async def tourney(self, ctx, wiki, id):
-        pl = {'wiki': wiki, 'apikey': API_KEY, 'limit': 1, 'conditions': f'[[pageid::{id}]] OR [[name::{id}]]','order':'name ASC, startdate DESC'}
+        pl = {'wiki': wiki, 'apikey': API_KEY, 'limit': 1, 'conditions': f'[[pageid::{id}]] OR [[name::{id}]]','order':'name ASC'}
+        d = date.today().strftime("%Y-%m-%d")
         async with aiohttp.ClientSession() as cs:
-            async with cs.post(self.url , data=pl) as r:
+            async with cs.post(self.url, data=pl) as r:
                 response = await r.json()
                 for result in response['result']:
                     plplacements = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 16,
@@ -38,7 +43,6 @@ class Tournaments(commands.Cog):
                     e = discord.Embed(title=result['name'])
                     e.set_image(url=result['bannerurl'])
                     e.set_thumbnail(url=result['iconurl'])
-                    #Change this to instead insert new fields
                     if result['series'] != '':
                         e.add_field(name='Series',value=result['series'],inline=False)
                     if str(result['startdate']) != '1970-01-01':
@@ -58,17 +62,16 @@ class Tournaments(commands.Cog):
                             e.add_field(name='Winners',value='TBD',inline=False)
                     else:
                         e.add_field(name='Winners', value='TBD', inline=False)
-
-
         async with aiohttp.ClientSession() as cs:
             async with cs.post(url=placements,data=plplacements) as r:
                 response = await r.json()
-                print(response)
                 message = ''
                 for result in response['result']:
-                    print(result)
+                    if result['placement'] == '':
+                        break
                     message += f"{result['participant']}:  {result['placement']} Place\n"
-                e.add_field(name='Placements',value=message,inline=False)
+                if message != '':
+                     e.add_field(name='Placements',value=message,inline=False)
                 await ctx.send(embed=e)
 
     @commands.command(name='upcoming')
@@ -135,11 +138,10 @@ class Tournaments(commands.Cog):
 
     @commands.command(name='searchseries')
     async def series(self,ctx, wiki, series):
-        pl = {'wiki': wiki, 'apikey': API_KEY, 'limit': 100, 'conditions': f'[[series::{series}]]',
-              'order': 'startdate DESC'}
+        pl = {'wiki': wiki, 'apikey': API_KEY, 'limit': 100, 'conditions': f'[[series::{series}]]', 'order':'startdate DESC'}
         initial = await ctx.send(f'The following matches for {wiki}: ')
         async with aiohttp.ClientSession() as cs:
-            async with cs.post(matches, data=pl) as r:
+            async with cs.post(self.url, data=pl) as r:
                 response = await r.json()
                 maxpagenumber = math.ceil(len(response['result']) / 10)
                 current = 1
@@ -157,7 +159,6 @@ class Tournaments(commands.Cog):
 
                 await m.add_reaction("◀")
                 await m.add_reaction("▶")
-                print(len(allContent))
                 def check(reaction, user):
                     return user == ctx.author and str(reaction.emoji) in ["◀", "▶"]
 
@@ -195,7 +196,6 @@ class Tournaments(commands.Cog):
                 count = 1
                 message = ''
                 for result in response['result']:
-                    print(result)
                     message += f'[{result["matchid"]}]  **  {result["opponent1"]} vs. {result["opponent2"]}' \
                                f'  **\n*{result["opponent1score"]}-{result["opponent2score"]}*   \n'
                     count += 1
@@ -233,7 +233,7 @@ class Tournaments(commands.Cog):
                         break
 
     @commands.command(name='match')
-    async def tourney(self, ctx, wiki, id):
+    async def matchsearch(self, ctx, wiki, id):
         pl = {'wiki': wiki, 'apikey': API_KEY, 'limit': 1, 'conditions': f'[[matchid::{id}]]'}
         async with aiohttp.ClientSession() as cs:
             async with cs.post(matches, data=pl) as r:

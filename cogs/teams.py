@@ -26,7 +26,6 @@ class Teams(commands.Cog):
                         for result in response['result']:
                             plplayers = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 20,
                                             'conditions': f'[[team::{result["name"]}]] AND [[status::Active]]'}
-                            print(result)
                             e = discord.Embed(title=result['name'], url=result['links']['website'])
                             e.set_image(url=result['logourl'])
                             e.set_thumbnail(url=result['logourl'])
