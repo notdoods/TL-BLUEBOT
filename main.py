@@ -1,6 +1,8 @@
 from discord.ext import commands
+import discord
 from decouple import config
 import asyncio
+
 
 '''
 FOR SURE NEED TO DO LIST:
@@ -8,17 +10,15 @@ EXTEND SO THAT I CAN CHANGE THE WIKI'S
 '''
 DISCORD_KEY = config('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix='?')
-
+q = config('q')
 @bot.command(name='gameslist')
 async def gamesList(ctx):
     gl = open('gameslist.txt')
     lines = gl.readlines()
     gl.close()
     length = len(lines)//2
-    A = lines[:length]
-    B = lines[length:]
-    page1 = ''.join(A)
-    page2 = ''.join(B)
+    page1 = ''.join(lines[:length])
+    page2 = ''.join(lines[length:])
     allPages = [page1,page2]
     current = 1
     maxpagenumber = 2
@@ -48,6 +48,16 @@ async def gamesList(ctx):
             await m.delete()
             break
 
+API_KEY = config('API_KEY')
+url = 'https://api.liquipedia.net/api/v1/match'
+
+@bot.command(name='q')
+async def Q(ctx):
+    e = discord.Embed(title='Q')
+    e.set_image(url=q)
+    await ctx.send(q)
+
+bot.load_extension('cogs.player')
 bot.load_extension('cogs.tournaments')
 bot.load_extension('cogs.teams')
 bot.run(DISCORD_KEY)

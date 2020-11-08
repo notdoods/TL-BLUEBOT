@@ -5,56 +5,50 @@ import discord
 from decouple import config
 from datetime import date
 
-
 API_KEY = config('API_KEY')
 url = 'https://api.liquipedia.net/api'
-playerURL = url + '/v1/player'
+tourneyURL = url + '/v1/team'
 
-class Teams(commands.Cog):
+class Player(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.url = url + '/v1/team'
+        self.url = url + '/v1/player'
 
-    @commands.command(name='searchteam')
-    async def searchteam(self, ctx, wiki, id):
-        pl = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1, 'conditions':f'[[name::{id}]] OR [[pageid::{id}]]'}
-        try:
-            async with aiohttp.ClientSession() as cs:
-                async with cs.post(self.url, data=pl) as r:
-                    response = await r.json()
-                    if response['result'] != []:
-                        for result in response['result']:
-                            plplayers = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 20,
-                                            'conditions': f'[[team::{result["name"]}]] AND [[status::Active]]'}
-                            print(result)
-                            e = discord.Embed(title=result['name'], url=result['links']['website'])
-                            e.set_image(url=result['logourl'])
-                            e.set_thumbnail(url=result['logourl'])
-                            e.add_field(name='Location', value=result['location'], inline=False)
-                            if str(result['createdate']) != '1000-01-01':
-                                e.add_field(name='Create Date', value=str(result['createdate']), inline=False)
-                            else:
-                                e.add_field(name='Create Date', value='????-??-??',inline=False)
-                            earnings = format(result["earnings"], ",d")
-                            e.add_field(name='Earnings', value='$' + str(earnings), inline=False)
-                            e.add_field(name='Coach', value=result['coach'], inline=False)
+    @commands.command(name='searchplayer')
+    async def searchplayer(self, ctx, wiki, id):
+        pl = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1, 'conditions': f'[[id::{id}]] OR [[pageid::{id}]]'}
+        async with aiohttp.ClientSession() as cs:
+            async with cs.post(self.url, data=pl) as r:
+                response = await r.json()
+                for result in response['result']:
+                    payloadImage = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1,
+                                    'conditions': f'[[name::{result["team"]}]]'}
+                    print(result)
+                    e = discord.Embed(title=result['id'])
+                    e.add_field(name='Full Name', value=result['name'], inline=False)
+                    if result['romanizedname'] != '':
+                        e.add_field(name='Romanized Name',value=result['romanizedname'],inline=False)
+                    if result['localizedname'] != '':
+                        e.add_field(name='Localized Name', value=result['localizedname'],inline=False)
+                    e.add_field(name='Nationality', value=result['nationality'], inline=False)
+                    if str(result['birthdate']) != '1000-01-01' or result['birthdate'] is result['deathdate']:
+                        e.add_field(name='Birthday', value=str(result['birthdate']), inline=False)
                     else:
-                        raise Exception()
+                        e.add_field(name='Birthday', value='????-??-??', inline=False)
+                    earnings = format(result["earnings"], ",d")
+                    e.add_field(name='Earnings', value='$' + str(earnings), inline=False)
+                    e.add_field(name='Active?', value=result['status'],inline=False)
+                    e.add_field(name='Team', value=result['team'], inline = False)
 
-            async with aiohttp.ClientSession() as cs:
-                async with cs.post(playerURL,data=plplayers) as r:
-                    response = await r.json()
-                    playerlist = ''
-                    for result in response['result']:
-                        playerlist += f'[{result["pageid"]}]  {result["id"]}\n'
-                    e.add_field(name='Active Players', value=playerlist, inline=False)
-                    await ctx.send(embed=e)
-        except:
-            await ctx.send('Error finding team: Make sure ID is valid/name is EXACT match (proper capitalization for the organization)')
+        async with aiohttp.ClientSession() as cs:
+            async with cs.post(tourneyURL,data=payloadImage) as r:
+                response = await r.json()
+                for result in response['result']:
+                    e.set_image(url=result['logourl'])
+                    m = await ctx.send(embed=e)
 
-
-    @commands.command(name='heteams')
-    async def highestearnedTeams(self, ctx, wiki):
+    @commands.command(name='heplayers')
+    async def highestearnedPlayer(self, ctx, wiki):
         d = date.today().strftime("%Y-%m-%d")
         #Create pages using Reactions, limit:100, and keeping track
         #Basic logic from my understanding:
@@ -71,7 +65,7 @@ class Teams(commands.Cog):
                 message = ''
                 for result in response['result']:
                     earnings = format(result["earnings"], ",d")
-                    message += f'[{result["pageid"]}]  ' '**'+ result["name"] +f'**\n*${str(earnings)}* ' + '\n'
+                    message += f'[{result["pageid"]}]  ' '**'+ result["id"] +f'**\n*${str(earnings)}* ' + '\n'
                     count += 1
                     if count%maxpagenumber == 0:
                         allContent.append(message)
@@ -104,4 +98,4 @@ class Teams(commands.Cog):
                         break
 
 def setup(bot):
-    bot.add_cog(Teams(bot))
+    bot.add_cog(Player(bot))
