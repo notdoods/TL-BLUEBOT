@@ -15,7 +15,7 @@ class Teams(commands.Cog):
         self.bot = bot
         self.url = url + '/v1/team'
 
-    @commands.command(name='searchteam')
+    @commands.command(name='team')
     async def searchteam(self, ctx, wiki, id):
         pl = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1, 'conditions':f'[[name::{id}]] OR [[pageid::{id}]]'}
         try:
@@ -75,32 +75,36 @@ class Teams(commands.Cog):
                     if count%maxpagenumber == 0:
                         allContent.append(message)
                         message = ''
-                m = await ctx.send(f">>> **Page {current}/{maxpagenumber}**: \n\n {allContent[current-1]}")
+                if len(allContent) == 0:
+                    await initial.edit(
+                        content='An error has occurred, try again using proper inputs (Inputs are Cap Sensitive)')
+                else:
+                    m = await ctx.send(f">>> **Page {current}/{maxpagenumber}**: \n\n {allContent[current-1]}")
 
-                await m.add_reaction("◀")
-                await m.add_reaction("▶")
+                    await m.add_reaction("◀")
+                    await m.add_reaction("▶")
 
-                def check(reaction,user):
-                    return user == ctx.author and str(reaction.emoji) in ["◀","▶"]
+                    def check(reaction,user):
+                        return user == ctx.author and str(reaction.emoji) in ["◀","▶"]
 
-                while True:
-                    try:
-                        reaction, user = await self.bot.wait_for('reaction_add', timeout=30, check=check)
-                        if str(reaction.emoji) == "▶" and current != maxpagenumber:
-                            current += 1
-                            await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current-1]}")
-                            await m.remove_reaction(reaction,user)
+                    while True:
+                        try:
+                            reaction, user = await self.bot.wait_for('reaction_add', timeout=30, check=check)
+                            if str(reaction.emoji) == "▶" and current != maxpagenumber:
+                                current += 1
+                                await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current-1]}")
+                                await m.remove_reaction(reaction,user)
 
-                        elif str(reaction.emoji) == "◀" and current > 1:
-                            current -= 1
-                            await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current - 1]}")
-                            await m.remove_reaction(reaction, user)
-                        else:
-                            await m.remove_reaction(reaction,user)
-                    except asyncio.TimeoutError:
-                        await m.delete()
-                        await initial.delete()
-                        break
+                            elif str(reaction.emoji) == "◀" and current > 1:
+                                current -= 1
+                                await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current - 1]}")
+                                await m.remove_reaction(reaction, user)
+                            else:
+                                await m.remove_reaction(reaction,user)
+                        except asyncio.TimeoutError:
+                            await m.delete()
+                            await initial.delete()
+                            break
 
 def setup(bot):
     bot.add_cog(Teams(bot))

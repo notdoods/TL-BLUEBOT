@@ -3,10 +3,9 @@ import discord
 from decouple import config
 import asyncio
 
-
 '''
 FOR SURE NEED TO DO LIST:
-EXTEND SO THAT I CAN CHANGE THE WIKI'S
+
 '''
 DISCORD_KEY = config('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix='?')
@@ -47,9 +46,6 @@ async def gamesList(ctx):
         except asyncio.TimeoutError:
             await m.delete()
             break
-
-API_KEY = config('API_KEY')
-url = 'https://api.liquipedia.net/api/v1/match'
 
 @bot.command(name='q')
 async def Q(ctx):

@@ -14,41 +14,48 @@ class Player(commands.Cog):
         self.bot = bot
         self.url = url + '/v1/player'
 
-    @commands.command(name='searchplayer')
+    @commands.command(name='player')
     async def searchplayer(self, ctx, wiki, id):
         pl = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1, 'conditions': f'[[id::{id}]] OR [[pageid::{id}]]'}
-        async with aiohttp.ClientSession() as cs:
-            async with cs.post(self.url, data=pl) as r:
-                response = await r.json()
-                for result in response['result']:
-                    payloadImage = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1,
-                                    'conditions': f'[[name::{result["team"]}]]'}
-                    e = discord.Embed(title=result['id'])
-                    e.add_field(name='Full Name', value=result['name'], inline=False)
-                    if result['romanizedname'] != '':
-                        e.add_field(name='Romanized Name',value=result['romanizedname'],inline=False)
-                    if result['localizedname'] != '':
-                        e.add_field(name='Localized Name', value=result['localizedname'],inline=False)
-                    e.add_field(name='Nationality', value=result['nationality'], inline=False)
-                    if str(result['birthdate']) != '1000-01-01' or result['birthdate'] is result['deathdate']:
-                        e.add_field(name='Birthday', value=str(result['birthdate']), inline=False)
+        payloadImage = {}
+        try:
+            async with aiohttp.ClientSession() as cs:
+                async with cs.post(self.url, data=pl) as r:
+                    response = await r.json()
+                    if response['result'] != []:
+                        for result in response['result']:
+                            payloadImage = {'wiki': wiki.lower(), 'apikey': API_KEY, 'limit': 1,
+                                            'conditions': f'[[name::{result["team"]}]]'}
+                            e = discord.Embed(title=result['id'])
+                            e.add_field(name='Full Name', value=result['name'], inline=False)
+                            if result['romanizedname'] != '':
+                                e.add_field(name='Romanized Name',value=result['romanizedname'],inline=False)
+                            if result['localizedname'] != '':
+                                e.add_field(name='Localized Name', value=result['localizedname'],inline=False)
+                            e.add_field(name='Nationality', value=result['nationality'], inline=False)
+                            if str(result['birthdate']) != '1000-01-01' or result['birthdate'] is result['deathdate']:
+                                e.add_field(name='Birthday', value=str(result['birthdate']), inline=False)
+                            else:
+                                e.add_field(name='Birthday', value='????-??-??', inline=False)
+                            earnings = format(result["earnings"], ",d")
+                            e.add_field(name='Earnings', value='$' + str(earnings), inline=False)
+                            e.add_field(name='Active?', value=result['status'],inline=False)
+                            e.add_field(name='Team', value=result['team'], inline = False)
                     else:
-                        e.add_field(name='Birthday', value='????-??-??', inline=False)
-                    earnings = format(result["earnings"], ",d")
-                    e.add_field(name='Earnings', value='$' + str(earnings), inline=False)
-                    e.add_field(name='Active?', value=result['status'],inline=False)
-                    e.add_field(name='Team', value=result['team'], inline = False)
+                        raise Exception()
 
-        async with aiohttp.ClientSession() as cs:
-            async with cs.post(tourneyURL,data=payloadImage) as r:
-                response = await r.json()
-                for result in response['result']:
-                    e.set_image(url=result['logourl'])
-                    m = await ctx.send(embed=e)
+            if payloadImage != {}:
+                async with aiohttp.ClientSession() as cs:
+                    async with cs.post(tourneyURL,data=payloadImage) as r:
+                        response = await r.json()
+                        for result in response['result']:
+                            e.set_image(url=result['logourl'])
+                            await ctx.send(embed=e)
+        except:
+            await ctx.send('An error has occurred, try again using proper inputs (Inputs are Cap Sensitive)')
 
     @commands.command(name='heplayers')
     async def highestearnedPlayer(self, ctx, wiki):
-        d = date.today().strftime("%Y-%m-%d")
         #Create pages using Reactions, limit:100, and keeping track
         #Basic logic from my understanding:
         #Bot will add reactions for left and right arrows, if the user reacts w/ the error, edit the message and remove their reaction.
@@ -69,32 +76,35 @@ class Player(commands.Cog):
                     if count%maxpagenumber == 0:
                         allContent.append(message)
                         message = ''
-                m = await ctx.send(f">>> **Page {current}/{maxpagenumber}**: \n\n {allContent[current-1]}")
+                if len(allContent) == 0:
+                    await initial.edit(content='An error has occurred, try again using proper inputs (Inputs are Cap Sensitive)')
+                else:
+                    m = await ctx.send(f">>> **Page {current}/{maxpagenumber}**: \n\n {allContent[current-1]}")
 
-                await m.add_reaction("◀")
-                await m.add_reaction("▶")
+                    await m.add_reaction("◀")
+                    await m.add_reaction("▶")
 
-                def check(reaction,user):
-                    return user == ctx.author and str(reaction.emoji) in ["◀","▶"]
+                    def check(reaction,user):
+                        return user == ctx.author and str(reaction.emoji) in ["◀","▶"]
 
-                while True:
-                    try:
-                        reaction, user = await self.bot.wait_for('reaction_add', timeout=30, check=check)
-                        if str(reaction.emoji) == "▶" and current != maxpagenumber:
-                            current += 1
-                            await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current-1]}")
-                            await m.remove_reaction(reaction,user)
+                    while True:
+                        try:
+                            reaction, user = await self.bot.wait_for('reaction_add', timeout=30, check=check)
+                            if str(reaction.emoji) == "▶" and current != maxpagenumber:
+                                current += 1
+                                await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current-1]}")
+                                await m.remove_reaction(reaction,user)
 
-                        elif str(reaction.emoji) == "◀" and current > 1:
-                            current -= 1
-                            await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current - 1]}")
-                            await m.remove_reaction(reaction, user)
-                        else:
-                            await m.remove_reaction(reaction,user)
-                    except asyncio.TimeoutError:
-                        await m.delete()
-                        await initial.delete()
-                        break
+                            elif str(reaction.emoji) == "◀" and current > 1:
+                                current -= 1
+                                await m.edit(content=f">>> **Page {current}/{maxpagenumber}**: \n\n{allContent[current - 1]}")
+                                await m.remove_reaction(reaction, user)
+                            else:
+                                await m.remove_reaction(reaction,user)
+                        except asyncio.TimeoutError:
+                            await m.delete()
+                            await initial.delete()
+                            break
 
 def setup(bot):
     bot.add_cog(Player(bot))
